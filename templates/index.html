@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>WiFi Manager</title>
+    <style>
+        #wifiList, #profiles {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>WiFi Manager</h1>
+
+<!-- 扫描网络区域 -->
+<div>
+    <button type="button" onclick="start_keep()">start_keep</button>
+    <button id="scanButton">Scan Networks</button>
+    <div class="wifiList">
+        <!-- Networks will be displayed here -->
+        <table class="wifiList" id="wifiList">
+            <thead>
+            <tr>
+                <th>SSID</th>
+                <th>BSSID</th>
+                <th>Security</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Networks will be displayed here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 连接网络表单区域 -->
+<div>
+    <h2>Connect to a Network</h2>
+    <form id="connectForm">
+        <label for="SSID">SSID:</label>
+        <input type="text" id="SSID" name="SSID" required>
+        <br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <br>
+        <button type="button" onclick="connectToNetwork()">Connect</button>
+    </form>
+</div>
+
+<!-- 配置文件管理区域 -->
+<div>
+    <h2>WiFi Profiles</h2>
+    <form id="profileForm">
+        <label for="ssidProfile">SSID:</label>
+        <input type="text" id="ssidProfile" name="SSID" required>
+        <br>
+        <label for="noProfile">Profile Number:</label>
+        <input type="number" id="noProfile" name="No">
+        <br>
+        <label for="passwordProfile">Password:</label>
+        <input type="password" id="passwordProfile" name="password">
+        <br>
+        <label for="lgnProfile">lgn:</label>
+        <input type="text" id="lgnProfile" name="lgn">
+        <br>
+        <button type="button" onclick="addProfile()">Add Profile</button>
+    </form>
+    <div class="display">
+        <!-- Profiles will be displayed here -->
+        <table class="profiles" id="profiles">
+            <thead>
+            <tr>
+                <th>No</th>
+                <th>SSID</th>
+                <th>password</th>
+                <th>lgn</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<script>
+    // 开启保持连接
+    function start_keep() {
+        fetch('/keep')
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error('Error:', error));
+    }
+
+    // 扫描网络
+    document.getElementById('scanButton').addEventListener('click', function () {
+        fetch('/scan')
+            .then(response => response.json())
+            .then(data => {
+                const table = document.getElementById('wifiList');
+                const listBody = table.getElementsByTagName('tbody')[0];
+                listBody.innerHTML = ''; // Clear previous list
+                data.forEach(network => {
+                    const row = listBody.insertRow();
+                    row.insertCell().textContent = network.SSID;
+                    row.insertCell().textContent = network.BSSID;
+                    row.insertCell().textContent = network.Security;
+                    // 连接按钮
+                    const connectButton = document.createElement('button');
+                    connectButton.textContent = 'Connect';
+                    connectButton.onclick = function () {
+                        let password = prompt('Enter the password for ' + network.SSID);
+                        fetch('/connect', {
+                            method: 'POST',
+                            body: new URLSearchParams({SSID: network.SSID, password: password})
+                        })
+                            .then(response => response.json())
+                            .then(data => alert(data.message))
+                            .catch(error => console.error('Error:', error));
+                    };
+                    row.insertCell().appendChild(connectButton);
+                });
+            });
+    });
+
+    // 连接到网络
+    function connectToNetwork() {
+        const formData = new FormData(document.getElementById('connectForm'));
+        fetch('/connect', {
+            method: 'POST',
+            body: new URLSearchParams(Object.fromEntries(formData))
+        })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(error => console.error('Error:', error));
+    }
+
+    // 添加配置文件
+    function addProfile() {
+        const formData = new FormData(document.getElementById('profileForm'));
+        fetch('/profile/insert', {
+            method: 'POST',
+            body: new URLSearchParams(Object.fromEntries(formData))
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                // Optionally, refresh the profiles list
+                fetch('/profile')
+                    .then(response => response.json())
+                    .then(data => updateProfilesList(data));
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // 显示配置文件列表
+    function updateProfilesList(profiles) {
+        const profilesTable = document.getElementById('profiles');
+        const profilesBody = profilesTable.getElementsByTagName('tbody')[0];
+        profilesBody.innerHTML = ''; // Clear previous list
+        profiles.forEach((profile, index) => {
+            const row = profilesBody.insertRow();
+            row.insertCell().textContent = index;
+            row.insertCell().textContent = profile.SSID;
+            row.insertCell().textContent = profile.password;
+            row.insertCell().textContent = profile.lgn;
+            // 删除按钮
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'Remove';
+            removeButton.onclick = function () {
+                fetch('/profile/remove', {
+                    method: 'POST',
+                    body: new URLSearchParams({No: index, SSID: profile.SSID})
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        // Optionally, refresh the profiles list
+                        fetch('/profile')
+                            .then(response => response.json())
+                            .then(data => updateProfilesList(data));
+                    })
+                    .catch(error => console.error('Error:', error));
+            };
+            row.insertCell().appendChild(removeButton);
+
+            // // 修改按钮
+            // const updateButton = document.createElement('button');
+            // updateButton.textContent = 'Update';
+            // updateButton.onclick = function () {
+            //     fetch('/profile/update', {
+            //         method: 'POST',
+            //         body: new URLSearchParams({No: index, SSID: profile.SSID, password: profile.password})
+            //     })
+            //         .then(response => response.json())
+            //         .then(data => {
+            //             alert(data.message);
+            //             // Optionally, refresh the profiles list
+            //             fetch('/profile')
+            //                 .then(response => response.json())
+            //                 .then(data => updateProfilesList(data));
+            //         })
+            //         .catch(error => console.error('Error:', error));
+            // };
+
+            // row.insertCell().appendChild(updateButton);
+        });
+    }
+
+
+    // Fetch profiles on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/profile')
+            .then(response => response.json())
+            .then(data => updateProfilesList(data));
+    });
+</script>
+</body>
+</html>
