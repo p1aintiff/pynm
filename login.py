@@ -24,9 +24,12 @@ class Login(ABC):
         :return:
         """
         try:
-            r = requests.get(self.check_url)
+            r = requests.get(self.check_url, timeout=2)
             return "www.baidu.com" in r.text
         except requests.exceptions.ConnectionError:
+            return False
+        except requests.exceptions.ReadTimeout:
+            print("超时")
             return False
 
     @abstractmethod

@@ -1,5 +1,6 @@
 import subprocess
 import time
+from loguru import logger
 
 
 def scan_wifi():
@@ -9,8 +10,8 @@ def scan_wifi():
     :return: list of {In-Use, BSSID, SSID, Mode, Channel, Rate, Signal, Bars, Security}
     """
     # 执行 nmcli 命令并捕获输出
-    result0 = subprocess.run(['nmcli', 'device', 'wifi', 'rescan'], capture_output=True)
-    print(f"重新扫描wifi：{result0.stdout}:::{result0.stderr}")
+    result0 = subprocess.run(['nmcli', 'device', 'wifi', 'rescan'], capture_output=True, text=True)
+    logger.debug(f"重新扫描wifi：{result0.stdout}:::{result0.stderr}")
     time.sleep(1)
     result = subprocess.run(['nmcli', "-t", 'device', 'wifi', 'list'], capture_output=True, text=True)
     output = result.stdout
@@ -47,11 +48,11 @@ def connect_wifi(SSID, password, count=3):
     连接wifi
     :param SSID: wifi名称
     :param password: wifi密码
-    :return:
+    :return: shell文字输出
     """
     if count < 1:
         return "以尝试3次，连接失败"
-    print(f"尝试连接{count}次")
+    logger.debug(f"尝试连接{count}次")
     # 执行 nmcli 命令并捕获输出
 
     command = f'nmcli device wifi connect {SSID}'
@@ -68,8 +69,8 @@ def connect_wifi(SSID, password, count=3):
         delete_result = subprocess.run(['nmcli', 'connection', 'delete', SSID], capture_output=True, text=True,
                                        shell=True)
         if "successfully" in delete_result.stdout:
-            print(f"删除wifi配置成功：{delete_result.stdout}")
+            logger.debug(f"删除wifi配置成功：{delete_result.stdout}")
             return connect_wifi(SSID, password, count - 1)
         else:
-            print(f"删除wifi配置失败：{delete_result.stderr}")
+            logger.debug(f"删除wifi配置失败：{delete_result.stderr}")
             return result.stderr
