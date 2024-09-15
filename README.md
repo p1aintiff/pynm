@@ -1,7 +1,9 @@
 
 
 ### 下载代码
-略
+```bash
+git clone https://github.com/p1aintiff/pynm.git && cd pynm
+```
 
 ### 使用
 **1 创建python环境**  
