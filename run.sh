@@ -1,2 +1,1 @@
-# /bin/bash
-nohup python your_script.py > last.log 2>&1 &
+nohup python run.py --host "127.0.0.1" --port "9001" --log_level "TRACE" --log_file "./log" --debug False --no_console True > last.log 2>&1 &

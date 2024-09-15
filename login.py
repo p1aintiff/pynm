@@ -1,5 +1,6 @@
 import re
 import requests
+from loguru import logger
 from abc import ABC, abstractmethod
 
 class_registry = {}
@@ -15,7 +16,7 @@ def register_class(class_name):
 
 class Login(ABC):
     def __init__(self):
-        print("init login class")
+        logger.info("init login class")
         self.check_url = "http://www.baidu.com"
 
     def check(self):
@@ -29,7 +30,7 @@ class Login(ABC):
         except requests.exceptions.ConnectionError:
             return False
         except requests.exceptions.ReadTimeout:
-            print("超时")
+            logger.info("超时")
             return False
 
     @abstractmethod
@@ -89,10 +90,10 @@ class A229(Login):
 
         self.v4serip = match_v4serip.group(1)
         self.v46ip = match_v46ip.group(1)
-        print(f"v4serip: {self.v4serip}, v46ip: {self.v46ip}")
+        logger.debug(f"v4serip: {self.v4serip}, v46ip: {self.v46ip}")
 
     def login(self):
-        print("Login")
+        logger.debug("Login")
         self.get_login_page()
         url = f"http://10.21.221.98:801/eportal/portal/login?callback=dr1005&login_method=1&user_account={self.account}@campus&user_password={self.password}&wlan_user_ip={self.v46ip}&wlan_user_ipv6=&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=&jsVersion=4.2.1&terminal_type=1&lang=zh-cn&v=7012&lang=zh"
         payload = {}
@@ -106,11 +107,10 @@ class A229(Login):
             'Referer': 'http://10.21.221.98/',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0'
         }
-        print(f"Login url: {url}")
-        print(f"account: {self.account}, password: {self.password}")
-        print(f"v46ip: {self.v46ip}")
+        logger.debug(f"Login url: {url}")
+        logger.debug(f"account: {self.account}")
+        logger.debug(f"v46ip: {self.v46ip}")
         response = requests.request("GET", url, headers=headers, data=payload, timeout=2)
-        print(response.text)
         # {"result":1,"msg":"Portal协议认证成功","ret_code":0}
         # {"result":0,"msg":"无法获取用户认证账号！","ret_code":1})
         # {"result": 0, "msg": "IP: 10.126.16.72 已经在线！", "ret_code": 2}
@@ -137,12 +137,12 @@ class A229(Login):
         match_v4ip = re.search(pattern_v4ip, text)
 
         if match_time:
-            print(f"Extracted time: {match_time.group(1)}")
-            print(f"Extracted flow: {match_flow.group(1)}")
-            print(f"Extracted fee: {match_fee.group(1)}")
-            print(f"Extracted uid: {match_uid.group(1)}")
+            logger.info(f"Extracted time: {match_time.group(1)}")
+            logger.info(f"Extracted flow: {match_flow.group(1)}")
+            logger.info(f"Extracted fee: {match_fee.group(1)}")
+            logger.info(f"Extracted uid: {match_uid.group(1)}")
 
-            print(f"Extracted v4ip: {match_v4ip.group(1)}")
+            logger.info(f"Extracted v4ip: {match_v4ip.group(1)}")
             flow = match_flow.group(1)
             flow = flow.strip()
             flow = int(flow)
@@ -153,11 +153,11 @@ class A229(Login):
                 readable_flow = str(flow1 * 1024) + " KByte"
             else:
                 readable_flow = str(flow1) + " MByte"
-            print(f"Readable flow: {readable_flow}")
+            logger.debug(f"Readable flow: {readable_flow}")
             return {"time": match_time.group(1), "flow": readable_flow, "fee": match_fee.group(1),
                     "uid": match_uid.group(1), "v4ip": match_v4ip.group(1)}
         else:
-            print("Failed to extract")
+            logger.debug("Failed to extract")
             return None
 
 
@@ -219,7 +219,7 @@ class Lgn(Login):
         return False
 
     def info(self):
-        print("使用数据")
+        logger.debug("使用数据")
         resp = requests.get(url=self.info_url)
         text = resp.text
         # 正则
@@ -236,12 +236,12 @@ class Lgn(Login):
         match_v4ip = re.search(pattern_v4ip, text)
 
         if match_time:
-            print(f"Extracted time: {match_time.group(1)}")
-            print(f"Extracted flow: {match_flow.group(1)}")
-            print(f"Extracted fee: {match_fee.group(1)}")
-            print(f"Extracted uid: {match_uid.group(1)}")
+            logger.debug(f"Extracted time: {match_time.group(1)}")
+            logger.debug(f"Extracted flow: {match_flow.group(1)}")
+            logger.debug(f"Extracted fee: {match_fee.group(1)}")
+            logger.debug(f"Extracted uid: {match_uid.group(1)}")
 
-            print(f"Extracted v4ip: {match_v4ip.group(1)}")
+            logger.debug(f"Extracted v4ip: {match_v4ip.group(1)}")
             flow = match_flow.group(1)
             flow = flow.strip()
             flow = int(flow)
@@ -252,11 +252,11 @@ class Lgn(Login):
                 readable_flow = str(flow1 * 1024) + " KByte"
             else:
                 readable_flow = str(flow1) + " MByte"
-            print(f"Readable flow: {readable_flow}")
+            logger.debug(f"Readable flow: {readable_flow}")
             return {"time": match_time.group(1), "flow": readable_flow, "fee": match_fee.group(1),
                     "uid": match_uid.group(1), "v4ip": match_v4ip.group(1)}
         else:
-            print("Failed to extract")
+            logger.debug("Failed to extract")
             return None
 
 
@@ -278,7 +278,7 @@ if __name__ == "__main__":
     lgn_class = class_registry["A229"]
     lgn = lgn_class()
     res = lgn.check()
-    print(f"是否联网{res}")
+    logger.debug(f"是否联网{res}")
 
     # res = lgn.login()
     # print(f"登录结果{res}")

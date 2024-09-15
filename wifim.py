@@ -1,7 +1,6 @@
 import random
 import threading
 import time
-from warnings import deprecated
 
 from loguru import logger
 
@@ -91,7 +90,6 @@ class WifiM:
             logger.info(f'删除失败，{SSID}与{no}不匹配')
         return [profile['SSID'] for profile in self.profiles]
 
-    @deprecated
     # todo 修改no，password，lgn
     def update_profile(self, SSID, new_no=None, new_password=None, new_lgn=None):
         """
@@ -162,6 +160,7 @@ class WifiM:
             if self.current_SSID == ssid:
                 # 已连接目标wifi
                 logger.info(f"已连接{ssid}")
+                return True
             else:
                 # 未连接目标wifi
                 logger.debug(f"连接{ssid}")
